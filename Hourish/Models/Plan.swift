@@ -10,11 +10,21 @@ import SwiftData
 
 @Model final class Plan {
     var name: String
-    
-    @Relationship(deleteRule: .cascade)
-    private(set) var tasks: [Task] = []
+    var tasks: [Task] = []
     
     init(name: String) {
         self.name = name
+    }
+    
+    var formattedName: String {
+        if self.name.isEmpty {
+            "Untitled"
+        } else {
+            self.name
+        }
+    }
+    
+    var taskCount: Int {
+        tasks.count
     }
 }

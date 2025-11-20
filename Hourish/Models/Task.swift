@@ -12,13 +12,31 @@ import SwiftData
     var title: String
     var note: String
     var duration: Double
+    var isLocked: Bool
+    var order: Int
     
-    @Relationship(inverse: \Plan.tasks)
-    var task: Task?
-    
-    init(title: String, note: String, duration: Double) {
+    init(title: String, note: String, duration: Double, isLocked: Bool, order: Int) {
         self.title = title
         self.note = note
         self.duration = duration
+        self.isLocked = isLocked
+        self.order = order
+    }
+    
+    var formattedTask: Task {
+            let formattedTitle = title.isEmpty ? "Untitled Task" : self.title
+            let formattedNote = note.isEmpty ? "Untitled Note" : self.note
+            
+        return Task(title: formattedTitle, note: formattedNote, duration: self.duration, isLocked: self.isLocked, order: self.order)
+        }
+    
+    var formattedDuration: String {
+        let totalSeconds = Int(duration)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        
+        let secondsString = String(format: "%02d", seconds)
+        
+        return "\(minutes):\(secondsString)"
     }
 }

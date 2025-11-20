@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct HourishApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            PlanView()
+                .preferredColorScheme(.dark)
         }
+        .modelContainer(for: Plan.self)
     }
 }
