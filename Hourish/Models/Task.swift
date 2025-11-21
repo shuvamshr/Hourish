@@ -22,13 +22,7 @@ import SwiftData
         self.isLocked = isLocked
         self.order = order
     }
-    
-    var formattedTask: Task {
-            let formattedTitle = title.isEmpty ? "Untitled Task" : self.title
-            let formattedNote = note.isEmpty ? "Untitled Note" : self.note
-            
-        return Task(title: formattedTitle, note: formattedNote, duration: self.duration, isLocked: self.isLocked, order: self.order)
-        }
+
     
     var formattedDuration: String {
         let totalSeconds = Int(duration)

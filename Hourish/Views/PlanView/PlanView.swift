@@ -62,10 +62,22 @@ struct PlanView: View {
     }
     
     private var filteredPlans: [Plan] {
-        if planKeyword.isEmpty {
-            plans
-        } else {
-            plans.filter({ $0.name.hasPrefix(planKeyword) })
+        // If no keyword, return all plans
+        guard !planKeyword.isEmpty else { return plans }
+        
+        let keyword = planKeyword.lowercased()
+        
+        return plans.filter { plan in
+            // Check plan name
+            let matchesPlanName = plan.name.lowercased().contains(keyword)
+            
+            // Check tasks (title or note)
+            let matchesTasks = plan.tasks.contains { task in
+                task.title.lowercased().contains(keyword) ||
+                task.note.lowercased().contains(keyword)
+            }
+            
+            return matchesPlanName || matchesTasks
         }
     }
 }

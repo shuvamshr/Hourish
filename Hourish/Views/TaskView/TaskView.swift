@@ -55,6 +55,9 @@ struct TaskView: View {
                                         .tint(Color.accentColor)
                                     }
                                 }
+                                .onTapGesture {
+                                    selectedTask = task
+                                }
                         }
                         .onMove { source, destination in
                             for task in plan.tasks {
@@ -72,6 +75,8 @@ struct TaskView: View {
                         .onDelete { indexSet in
                             plan.tasks.remove(atOffsets: indexSet)
                         }
+                
+                        
                     } header: {
                         Text(plan.formattedName)
                             .font(.title)
@@ -109,12 +114,13 @@ struct TaskView: View {
                     }
                 }
                 ToolbarItem(placement: .bottomBar) {
-                    Button("Start Session") {
+                    Button("Start Session (\(plan.formattedTaskTotalDuration))") {
                         
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .disabled(plan.tasks.isEmpty)
+                    .tint(Color.accent)
                 }
             } else {
                 ToolbarItem(placement: .confirmationAction) {
@@ -156,9 +162,9 @@ struct NewTaskSheetView: View {
     
     @State private var title: String = ""
     @State private var note: String = ""
-    @State private var minute: Int = 0
-    @State private var second: Int = 5
-    @State private var duration: Int = 5
+    @State private var minute: Int = 1
+    @State private var second: Int = 0
+    @State private var duration: Int = 60
     @State private var isLocked: Bool = false
     
     @FocusState private var isTaskTitleFocused
@@ -180,7 +186,13 @@ struct NewTaskSheetView: View {
                         .focused($isNoteFocused)
                 }
                 Section {
-                    Toggle("Lock Time", isOn: $isLocked)
+                    HStack {
+                        withAnimation {
+                            Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                                .foregroundStyle(isLocked ? Color.accentColor : Color.secondary)
+                        }
+                        Toggle("Lock Time", isOn: $isLocked)
+                    }
                     HStack(spacing: 2) {
                         Picker("Task Duration", selection: $minute) {
                             ForEach(0...60, id: \.self) { value in
@@ -223,6 +235,7 @@ struct NewTaskSheetView: View {
                         addNewTask()
                         dismiss()
                     }
+                    .disabled(isInputInvalid)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", systemImage: "xmark") {
@@ -236,9 +249,27 @@ struct NewTaskSheetView: View {
         }
     }
     
+    private var isInputInvalid: Bool {
+        title.isEmpty
+    }
+    
     private func addNewTask() {
-        
-        let newTask = Task(title: title, note: note, duration: Double(duration), isLocked: isLocked, order: plan.tasks.count)
+        // Clean title and note
+        let cleanedTitle = title
+            .trimmingCharacters(in: .whitespacesAndNewlines)           // remove leading/trailing spaces
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression) // collapse multiple spaces
+
+        let cleanedNote = note
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+
+        let newTask = Task(
+            title: cleanedTitle,
+            note: cleanedNote,
+            duration: Double(duration),
+            isLocked: isLocked,
+            order: plan.tasks.count
+        )
         
         plan.tasks.append(newTask)
     }
@@ -251,13 +282,10 @@ struct EditTaskSheetView: View {
     
     @State private var title: String = ""
     @State private var note: String = ""
-    @State private var minute: Int = 0
-    @State private var second: Int = 5
-    @State private var duration: Int = 5
+    @State private var minute: Int = 1
+    @State private var second: Int = 0
+    @State private var duration: Int = 60
     @State private var isLocked: Bool = false
-    
-    @FocusState private var isTaskTitleFocused
-    @FocusState private var isNoteFocused
     
     @Environment(\.dismiss) private var dismiss
     
@@ -266,16 +294,17 @@ struct EditTaskSheetView: View {
             Form {
                 Section {
                     TextField("Task Title", text: $title)
-                        .focused($isTaskTitleFocused)
-                        .onSubmit {
-                            isTaskTitleFocused.toggle()
-                            isNoteFocused.toggle()
-                        }
                     TextField("Notes", text: $note)
-                        .focused($isNoteFocused)
+                    
                 }
                 Section {
-                    Toggle("Lock Time", isOn: $isLocked)
+                    HStack {
+                        withAnimation {
+                            Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                                .foregroundStyle(isLocked ? Color.accentColor : Color.secondary)
+                        }
+                        Toggle("Lock Time", isOn: $isLocked)
+                    }
                     HStack(spacing: 2) {
                         Picker("Task Duration", selection: $minute) {
                             ForEach(0...60, id: \.self) { value in
@@ -316,15 +345,13 @@ struct EditTaskSheetView: View {
                         updateTask()
                         dismiss()
                     }
+                    .disabled(isInputInvalid)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", systemImage: "xmark") {
                         dismiss()
                     }
                 }
-            }
-            .onAppear {
-                isTaskTitleFocused.toggle()
             }
         }
         .onAppear {
@@ -337,11 +364,21 @@ struct EditTaskSheetView: View {
         }
     }
     
+    private func clean(_ text: String) -> String {
+        text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+    }
+    
     private func updateTask() {
-        task.title = title
-        task.note = note
+        task.title = clean(title)
+        task.note = clean(note)
         task.duration = Double(minute) * 60 + Double(second)
         task.isLocked = isLocked
+    }
+    
+    private var isInputInvalid: Bool {
+        title.isEmpty
     }
 }
 
@@ -412,7 +449,7 @@ struct TaskCardView: View {
             if editMode?.wrappedValue == .inactive {
                 Image(systemName: task.isLocked ? "lock.fill" : "lock.open.fill")
                     .foregroundStyle(task.isLocked ? Color.accentColor : Color.secondary)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 20)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation {
@@ -422,9 +459,9 @@ struct TaskCardView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(task.formattedTask.title)
+                Text(task.title)
                 if !task.note.isEmpty {
-                    Text(task.formattedTask.note)
+                    Text(task.note)
                         .font(.footnote)
                         .foregroundStyle(Color.secondary)
                 }
@@ -438,4 +475,5 @@ struct TaskCardView: View {
         .contentShape(Rectangle())
     }
 }
+
 
