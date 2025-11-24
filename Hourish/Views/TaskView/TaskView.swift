@@ -16,142 +16,172 @@ struct TaskView: View {
     @State private var showEditPlanSheet: Bool = false
     @State private var showDeleteAlert: Bool = false
     
+    @State private var sessionActive: Bool = false
+    
+    @State private var sessionTasks: [SessionTask] = []
+    
     @Environment(\.dismiss) private var dismiss
     @Environment(\.editMode) private var editMode
     
     @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        Group {
-            if plan.tasks.isEmpty {
-                ContentUnavailableView("No Task Yet", image: "checklist", description: Text("Add task to “\(plan.formattedName)”"))
-            } else {
+        if !sessionActive {
+            Group {
+                if plan.tasks.isEmpty {
+                    ContentUnavailableView("No Task Yet", image: "checklist", description: Text("Add task to “\(plan.formattedName)”"))
+                } else {
+                        List {
+                            Section {
+                                ForEach(plan.tasks.sorted { $0.order < $1.order }) { task in
+                                    TaskCardView(task: task)
+                                        .buttonStyle(.plain)
+                                        .listRowSeparator(.visible, edges: [.top, .bottom])
+                                        .swipeActions(edge: .trailing) {
+                                            Button("Edit", systemImage: "pencil") {
+                                                selectedTask = task
+                                            }
+                                            Button("Delete", systemImage: "trash.fill", role: .destructive) {
+                                                if let index = plan.tasks.firstIndex(of: task) {
+                                                    plan.tasks.remove(atOffsets: IndexSet(integer: index))
+                                                }
+                                            }
+                                        }
+                                        .swipeActions(edge: .leading) {
+                                            if task.isLocked {
+                                                Button("Unlock", systemImage: "lock.open.fill") {
+                                                    task.isLocked = false
+                                                }
+                                                .tint(Color.secondary)
+                                            } else {
+                                                Button("Lock", systemImage: "lock.fill") {
+                                                    task.isLocked = true
+                                                }
+                                                .tint(Color.accentColor)
+                                            }
+                                        }
+                                        .onTapGesture {
+                                            selectedTask = task
+                                        }
+                                }
+                                .onMove { source, destination in
+                                    for task in plan.tasks {
+                                        print("\(task.title): \(task.order)")
+                                    }
+                                    plan.tasks.move(fromOffsets: source, toOffset: destination)
+                                    
+                                    for (index, task) in plan.tasks.enumerated() {
+                                        task.order = index
+                                    }
+                                    for task in plan.tasks {
+                                        print("\(task.title): \(task.order)")
+                                    }
+                                }
+                                .onDelete { indexSet in
+                                    plan.tasks.remove(atOffsets: indexSet)
+                                }
+                                
+                                
+                            } header: {
+                                Text(plan.formattedName)
+                                    .font(.title)
+                                    .foregroundStyle(.white)
+                                    .bold()
+                                
+                            }
+                        }
+                        .listStyle(.plain)
+                    
+                }
+            }
+            .toolbar {
+                if editMode?.wrappedValue == .inactive {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu("Edit", systemImage: "ellipsis") {
+                            Section {
+                                Button("Rename Plan", systemImage: "character.cursor.ibeam") {
+                                    showEditPlanSheet.toggle()
+                                }
+                                Button("Edit Tasks", systemImage: "pencil") {
+                                    withAnimation {
+                                        editMode?.wrappedValue =
+                                        editMode?.wrappedValue == .active ? .inactive : .active
+                                    }
+                                }
+                            }
+                            Button("Delete Plan", systemImage: "trash.fill", role: .destructive) {
+                                showDeleteAlert.toggle()
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Add", systemImage: "plus") {
+                            showNewTaskSheet.toggle()
+                        }
+                    }
+                    ToolbarItem(placement: .bottomBar) {
+                        Button("Start Session (\(plan.formattedTaskTotalDuration))") {
+                            withAnimation {
+                                sessionActive = true
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .disabled(plan.tasks.isEmpty)
+                        .tint(Color.accent)
+                    }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save", systemImage: "checkmark") {
+                            withAnimation {
+                                editMode?.wrappedValue = .inactive
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showNewTaskSheet) {
+                NewTaskSheetView(plan: plan)
+            }
+            .sheet(isPresented: $showEditPlanSheet) {
+                EditPlanSheetView(plan: plan)
+            }
+            .sheet(item: $selectedTask) { task in
+                EditTaskSheetView(plan: plan, task: task)
+            }
+            .confirmationDialog(
+                "Are you sure you want to delete?",
+                isPresented: $showDeleteAlert,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Plan", role: .destructive) {
+                    modelContext.delete(plan)
+                    dismiss()
+                }
+            } message: {
+                Text("This action cannot be undone.")
+            }
+        } else {
+            Group {
                 List {
-                    Section {
-                        ForEach(plan.tasks.sorted { $0.order < $1.order }) { task in
-                            TaskCardView(task: task)
-                                .buttonStyle(.plain)
-                                .listRowSeparator(.visible, edges: [.top, .bottom])
-                                .swipeActions(edge: .trailing) {
-                                    Button("Edit", systemImage: "pencil") {
-                                        selectedTask = task
-                                    }
-                                    Button("Delete", systemImage: "trash.fill", role: .destructive) {
-                                        if let index = plan.tasks.firstIndex(of: task) {
-                                            plan.tasks.remove(atOffsets: IndexSet(integer: index))
-                                        }
-                                    }
-                                }
-                                .swipeActions(edge: .leading) {
-                                    if task.isLocked {
-                                        Button("Unlock", systemImage: "lock.open.fill") {
-                                            task.isLocked = false
-                                        }
-                                        .tint(Color.secondary)
-                                    } else {
-                                        Button("Lock", systemImage: "lock.fill") {
-                                            task.isLocked = true
-                                        }
-                                        .tint(Color.accentColor)
-                                    }
-                                }
-                                .onTapGesture {
-                                    selectedTask = task
-                                }
-                        }
-                        .onMove { source, destination in
-                            for task in plan.tasks {
-                                print("\(task.title): \(task.order)")
-                            }
-                            plan.tasks.move(fromOffsets: source, toOffset: destination)
-                            
-                            for (index, task) in plan.tasks.enumerated() {
-                                task.order = index
-                            }
-                            for task in plan.tasks {
-                                print("\(task.title): \(task.order)")
-                            }
-                        }
-                        .onDelete { indexSet in
-                            plan.tasks.remove(atOffsets: indexSet)
-                        }
-                
-                        
-                    } header: {
-                        Text(plan.formattedName)
-                            .font(.title)
-                            .foregroundStyle(.white)
-                            .bold()
-                        
+                    ForEach(sessionTasks.sorted { $0.order < $1.order }, id: \.self) { task in
+                        SessionTaskCardView(
+                            task: task
+                        )
                     }
                 }
                 .listStyle(.plain)
             }
-        }
-        .toolbar {
-            if editMode?.wrappedValue == .inactive {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu("Edit", systemImage: "ellipsis") {
-                        Section {
-                            Button("Rename Plan", systemImage: "character.cursor.ibeam") {
-                                showEditPlanSheet.toggle()
-                            }
-                            Button("Edit Tasks", systemImage: "pencil") {
-                                withAnimation {
-                                    editMode?.wrappedValue =
-                                    editMode?.wrappedValue == .active ? .inactive : .active
-                                }
-                            }
-                        }
-                        Button("Delete Plan", systemImage: "trash.fill", role: .destructive) {
-                            showDeleteAlert.toggle()
-                        }
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add", systemImage: "plus") {
-                        showNewTaskSheet.toggle()
-                    }
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Start Session (\(plan.formattedTaskTotalDuration))") {
-                        
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(plan.tasks.isEmpty)
-                    .tint(Color.accent)
-                }
-            } else {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark") {
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Stop Session", systemImage: "xmark", role: .destructive) {
                         withAnimation {
-                            editMode?.wrappedValue = .inactive
+                            sessionActive = false
                         }
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showNewTaskSheet) {
-            NewTaskSheetView(plan: plan)
-        }
-        .sheet(isPresented: $showEditPlanSheet) {
-            EditPlanSheetView(plan: plan)
-        }
-        .sheet(item: $selectedTask) { task in
-            EditTaskSheetView(plan: plan, task: task)
-        }
-        .confirmationDialog(
-            "Are you sure you want to delete?",
-            isPresented: $showDeleteAlert,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Plan", role: .destructive) {
-                modelContext.delete(plan)
-                dismiss()
-            }
-        } message: {
-            Text("This action cannot be undone.")
+            .navigationBarBackButtonHidden()
         }
     }
 }
@@ -477,3 +507,48 @@ struct TaskCardView: View {
 }
 
 
+struct SessionTaskCardView: View {
+    let task: SessionTask
+    @State private var isActive: Bool = false
+    @State private var remainingSeconds: Double?
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+
+            // LEFT SIDE
+            VStack(alignment: .leading, spacing: 4) {
+                Text(task.title)
+                    .fontWeight(isActive ? .bold : .regular)
+
+                if !task.note.isEmpty {
+                    Text(task.note)
+                        .font(.footnote)
+                        .foregroundStyle(Color.secondary)
+                }
+            }
+
+            Spacer()
+
+            // RIGHT SIDE DURATION
+            if isActive, let remainingSeconds {
+                Text(formatTime(remainingSeconds))
+                    .font(.system(size: 54, weight: .thin))
+                    .monospacedDigit()
+                    .foregroundStyle(.accent)
+                    .contentTransition(.numericText())
+            } else {
+                Text(task.formattedDuration)
+                    .font(.system(size: 54, weight: .thin))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func formatTime(_ seconds: Double) -> String {
+        let total = max(Int(seconds), 0)
+        let min = total / 60
+        let sec = total % 60
+        return String(format: "%02d:%02d", min, sec)
+    }
+}
