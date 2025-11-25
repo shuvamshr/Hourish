@@ -27,66 +27,66 @@ struct TaskEditModeView: View {
             if plan.tasks.isEmpty {
                 ContentUnavailableView("No Task Yet", image: "checklist", description: Text("Add task to “\(plan.formattedName)”"))
             } else {
-                    List {
-                        Section {
-                            ForEach(plan.tasks.sorted { $0.order < $1.order }) { task in
-                                TaskCardView(task: task)
-                                    .buttonStyle(.plain)
-                                    .listRowSeparator(.visible, edges: [.top, .bottom])
-                                    .swipeActions(edge: .trailing) {
-                                        Button("Edit", systemImage: "pencil") {
-                                            selectedTask = task
-                                        }
-                                        Button("Delete", systemImage: "trash.fill", role: .destructive) {
-                                            if let index = plan.tasks.firstIndex(of: task) {
-                                                plan.tasks.remove(atOffsets: IndexSet(integer: index))
-                                            }
-                                        }
-                                    }
-                                    .swipeActions(edge: .leading) {
-                                        if task.isLocked {
-                                            Button("Unlock", systemImage: "lock.open.fill") {
-                                                task.isLocked = false
-                                            }
-                                            .tint(Color.secondary)
-                                        } else {
-                                            Button("Lock", systemImage: "lock.fill") {
-                                                task.isLocked = true
-                                            }
-                                            .tint(Color.accentColor)
-                                        }
-                                    }
-                                    .onTapGesture {
+                List {
+                    Section {
+                        ForEach(plan.tasks.sorted { $0.order < $1.order }) { task in
+                            TaskCardView(task: task)
+                                .buttonStyle(.plain)
+                                .listRowSeparator(.visible, edges: [.top, .bottom])
+                                .swipeActions(edge: .trailing) {
+                                    Button("Edit", systemImage: "pencil") {
                                         selectedTask = task
                                     }
-                            }
-                            .onMove { source, destination in
-                                for task in plan.tasks {
-                                    print("\(task.title): \(task.order)")
+                                    Button("Delete", systemImage: "trash.fill", role: .destructive) {
+                                        if let index = plan.tasks.firstIndex(of: task) {
+                                            plan.tasks.remove(atOffsets: IndexSet(integer: index))
+                                        }
+                                    }
                                 }
-                                plan.tasks.move(fromOffsets: source, toOffset: destination)
-                                
-                                for (index, task) in plan.tasks.enumerated() {
-                                    task.order = index
+                                .swipeActions(edge: .leading) {
+                                    if task.isLocked {
+                                        Button("Unlock", systemImage: "lock.open.fill") {
+                                            task.isLocked = false
+                                        }
+                                        .tint(Color.secondary)
+                                    } else {
+                                        Button("Lock", systemImage: "lock.fill") {
+                                            task.isLocked = true
+                                        }
+                                        .tint(Color.accentColor)
+                                    }
                                 }
-                                for task in plan.tasks {
-                                    print("\(task.title): \(task.order)")
+                                .onTapGesture {
+                                    selectedTask = task
                                 }
-                            }
-                            .onDelete { indexSet in
-                                plan.tasks.remove(atOffsets: indexSet)
-                            }
-                            
-                            
-                        } header: {
-                            Text(plan.formattedName)
-                                .font(.title)
-                                .foregroundStyle(.white)
-                                .bold()
-                            
                         }
+                        .onMove { source, destination in
+                            for task in plan.tasks {
+                                print("\(task.title): \(task.order)")
+                            }
+                            plan.tasks.move(fromOffsets: source, toOffset: destination)
+                            
+                            for (index, task) in plan.tasks.enumerated() {
+                                task.order = index
+                            }
+                            for task in plan.tasks {
+                                print("\(task.title): \(task.order)")
+                            }
+                        }
+                        .onDelete { indexSet in
+                            plan.tasks.remove(atOffsets: indexSet)
+                        }
+                        
+                        
+                    } header: {
+                        Text(plan.formattedName)
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .bold()
+                        
                     }
-                    .listStyle(.plain)
+                }
+                .listStyle(.plain)
                 
             }
         }
@@ -263,11 +263,11 @@ struct NewTaskSheetView: View {
         let cleanedTitle = title
             .trimmingCharacters(in: .whitespacesAndNewlines)           // remove leading/trailing spaces
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression) // collapse multiple spaces
-
+        
         let cleanedNote = note
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-
+        
         let newTask = Task(
             title: cleanedTitle,
             note: cleanedNote,
@@ -453,7 +453,7 @@ struct TaskCardView: View {
         HStack(alignment: .top, spacing: 16) {
             if editMode?.wrappedValue == .inactive {
                 Image(systemName: task.isLocked ? "lock.fill" : "lock.open.fill")
-                    .foregroundStyle(task.isLocked ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(task.isLocked ? Color.accentColor : Color.secondary.opacity(0.3))
                     .frame(width: 20)
                     .contentShape(Rectangle())
                     .onTapGesture {

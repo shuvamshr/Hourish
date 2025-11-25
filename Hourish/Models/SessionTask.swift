@@ -24,4 +24,8 @@ struct SessionTask: Hashable {
         
         return "\(minutes):\(secondsString)"
     }
+    
+    var isComplete: Bool {
+        duration <= 0
+    }
 }

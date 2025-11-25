@@ -31,52 +31,91 @@ struct TaskSessionModeView: View {
                 }
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Text("\(formatTime(sessionViewModel.totalRemainingTime))")
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button("Add Task", systemImage: "forward.fill") {
+                    
+                }
+            }
+        }
         .navigationBarBackButtonHidden()
+    }
+    
+    private func formatTime(_ seconds: Double) -> String {
+        let totalSeconds = max(seconds, 0)
+        
+        // Show milliseconds if below 60 seconds
+        if totalSeconds < 60 {
+            let sec = Int(totalSeconds)
+            let milliseconds = Int((totalSeconds - Double(sec)) * 100)
+            return String(format: "%02d.%02d", sec, milliseconds)
+        } else {
+            // Show minutes:seconds format for 60+ seconds
+            let total = Int(ceil(totalSeconds))
+            let min = total / 60
+            let sec = total % 60
+            return String(format: "%02d:%02d", min, sec)
+        }
     }
 }
 
 struct SessionTaskCardView: View {
     let task: SessionTask
-    @State private var isActive: Bool = false
-    @State private var remainingSeconds: Double?
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-
             // LEFT SIDE
             VStack(alignment: .leading, spacing: 4) {
+                
+                
                 Text(task.title)
-                    .fontWeight(isActive ? .bold : .regular)
-
+                    .fontWeight(task.isActive ? .semibold : .regular)
+                    .foregroundStyle(task.isComplete ? Color.secondary : Color.primary)
+                
                 if !task.note.isEmpty {
+                    
                     Text(task.note)
                         .font(.footnote)
                         .foregroundStyle(Color.secondary)
                 }
+                
             }
-
             Spacer()
-
             // RIGHT SIDE DURATION
-            if isActive, let remainingSeconds {
-                Text(formatTime(remainingSeconds))
-                    .font(.system(size: 54, weight: .thin))
+            if task.isActive {
+                Text(formatTime(task.duration))
+                    .font(.system(size: 48, weight: .thin))
                     .monospacedDigit()
                     .foregroundStyle(.accent)
-                    .contentTransition(.numericText())
             } else {
-                Text(task.formattedDuration)
-                    .font(.system(size: 54, weight: .thin))
-                    .foregroundStyle(.secondary)
+                Text(formatTime(task.duration))
+                    .font(.system(size: 48, weight: .thin))
+                    .monospacedDigit()
+                    .foregroundStyle(task.isComplete ? Color.secondary : Color.primary)
             }
         }
         .contentShape(Rectangle())
     }
-
+    
     private func formatTime(_ seconds: Double) -> String {
-        let total = max(Int(seconds), 0)
-        let min = total / 60
-        let sec = total % 60
-        return String(format: "%02d:%02d", min, sec)
+        let totalSeconds = max(seconds, 0)
+        
+        // Show milliseconds if below 60 seconds
+        if totalSeconds < 60 {
+            let sec = Int(totalSeconds)
+            let milliseconds = Int((totalSeconds - Double(sec)) * 100)
+            return String(format: "%02d.%02d", sec, milliseconds)
+        } else {
+            // Show minutes:seconds format for 60+ seconds
+            let total = Int(ceil(totalSeconds))
+            let min = total / 60
+            let sec = total % 60
+            return String(format: "%02d:%02d", min, sec)
+        }
     }
 }
