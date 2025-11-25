@@ -13,6 +13,7 @@ struct SessionTask: Hashable {
     var duration: Double
     var isLocked: Bool
     var order: Int
+    var isActive: Bool
     
     var formattedDuration: String {
         let totalSeconds = Int(duration)
