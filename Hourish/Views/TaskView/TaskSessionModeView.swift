@@ -9,7 +9,9 @@ import SwiftUI
 
 struct TaskSessionModeView: View {
     
-    @Environment(SessionViewModel.self) private var sessionViewModel
+    @EnvironmentObject private var sessionViewModel: SessionViewModel
+    
+    @State private var showStopSessionAlert: Bool = false
     
     var body: some View {
         Group {
@@ -18,50 +20,41 @@ struct TaskSessionModeView: View {
                     SessionTaskCardView(
                         task: task
                     )
+                    .swipeActions(edge: .leading) {
+                        Button("Delay", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90") {
+                            
+                        }
+                        .tint(Color.accentColor)
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button("Complete", systemImage: "checkmark.arrow.trianglehead.clockwise") {
+                            
+                        }
+                        .tint(Color.green)
+                    }
                 }
             }
             .listStyle(.plain)
+          
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Stop Session", systemImage: "xmark", role: .destructive) {
-                    withAnimation {
-                        sessionViewModel.stopSession()
-                    }
+                    showStopSessionAlert.toggle()
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Text("\(formatTime(sessionViewModel.totalRemainingTime))")
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                Button("Add Task", systemImage: "forward.fill") {
-                    
+        .confirmationDialog("Would you like to stop this session?", isPresented: $showStopSessionAlert, titleVisibility: .visible) {
+            Button("Stop Session", role: .destructive) {
+                withAnimation {
+                    sessionViewModel.stopSession()
                 }
             }
         }
+        
         .navigationBarBackButtonHidden()
     }
     
-    private func formatTime(_ seconds: Double) -> String {
-        let totalSeconds = max(seconds, 0)
-        
-        // Show milliseconds if below 60 seconds
-        if totalSeconds < 60 {
-            let sec = Int(totalSeconds)
-            let milliseconds = Int((totalSeconds - Double(sec)) * 100)
-            return String(format: "%02d.%02d", sec, milliseconds)
-        } else {
-            // Show minutes:seconds format for 60+ seconds
-            let total = Int(ceil(totalSeconds))
-            let min = total / 60
-            let sec = total % 60
-            return String(format: "%02d:%02d", min, sec)
-        }
-    }
 }
 
 struct SessionTaskCardView: View {
@@ -70,18 +63,37 @@ struct SessionTaskCardView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             // LEFT SIDE
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 12) {
                 
-                
-                Text(task.title)
-                    .fontWeight(task.isActive ? .semibold : .regular)
-                    .foregroundStyle(task.isComplete ? Color.secondary : Color.primary)
-                
-                if !task.note.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(task.title)
+                        .fontWeight(task.isActive ? .semibold : .regular)
+                        .foregroundStyle(task.isComplete ? Color.secondary : Color.primary)
+                        .lineLimit(task.isComplete ? 1 : 999)
+                        .truncationMode(.tail)
                     
-                    Text(task.note)
-                        .font(.footnote)
-                        .foregroundStyle(Color.secondary)
+                    if !task.note.isEmpty {
+                        
+                        Text(task.note)
+                            .font(.footnote)
+                            .foregroundStyle(Color.secondary)
+                            .lineLimit(task.isComplete ? 1 : 999)
+                            .truncationMode(.tail)
+                    }
+                }
+                
+                if task.isLocked {
+                    HStack {
+                        Image(systemName: "lock.fill")
+                        Text("Locked")
+                    }
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(task.isComplete ? Color.secondary : Color.accent)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.gray.quaternary)
+                    .clipShape(RoundedRectangle(cornerRadius: .infinity))
                 }
                 
             }
@@ -99,23 +111,16 @@ struct SessionTaskCardView: View {
                     .foregroundStyle(task.isComplete ? Color.secondary : Color.primary)
             }
         }
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .opacity(task.isComplete ? 0.5 : 1)
     }
     
     private func formatTime(_ seconds: Double) -> String {
-        let totalSeconds = max(seconds, 0)
-        
-        // Show milliseconds if below 60 seconds
-        if totalSeconds < 60 {
-            let sec = Int(totalSeconds)
-            let milliseconds = Int((totalSeconds - Double(sec)) * 100)
-            return String(format: "%02d.%02d", sec, milliseconds)
-        } else {
-            // Show minutes:seconds format for 60+ seconds
-            let total = Int(ceil(totalSeconds))
-            let min = total / 60
-            let sec = total % 60
-            return String(format: "%02d:%02d", min, sec)
-        }
+        let total = Int(max(seconds, 0))       // keep time ≥ 0
+        let min = total / 60                   // convert to minutes
+        let sec = total % 60                   // remainder seconds
+        return String(format: "%02d:%02d", min, sec)
     }
 }
+

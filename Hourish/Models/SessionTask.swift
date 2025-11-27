@@ -15,16 +15,6 @@ struct SessionTask: Hashable {
     var order: Int
     var isActive: Bool
     
-    var formattedDuration: String {
-        let totalSeconds = Int(duration)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        
-        let secondsString = String(format: "%02d", seconds)
-        
-        return "\(minutes):\(secondsString)"
-    }
-    
     var isComplete: Bool {
         duration <= 0
     }

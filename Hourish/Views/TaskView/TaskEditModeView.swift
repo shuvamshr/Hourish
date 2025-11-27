@@ -17,7 +17,8 @@ struct TaskEditModeView: View {
     @State private var showEditPlanSheet: Bool = false
     @State private var showDeleteAlert: Bool = false
     
-    @Environment(SessionViewModel.self) private var sessionViewModel
+    @EnvironmentObject private var sessionViewModel: SessionViewModel
+    
     @Environment(\.dismiss) private var dismiss
     @Environment(\.editMode) private var editMode
     @Environment(\.modelContext) private var modelContext
