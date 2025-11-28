@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TaskSessionModeView: View {
     
-    @EnvironmentObject private var sessionViewModel: SessionViewModel
+    @Environment(SessionViewModel.self) private var sessionViewModel
     
     @State private var showStopSessionAlert: Bool = false
     

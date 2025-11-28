@@ -12,7 +12,7 @@ struct TaskView: View {
     
     let plan: Plan
     
-    @StateObject private var sessionViewModel = SessionViewModel()
+    @State private var sessionViewModel = SessionViewModel()
     
     var body: some View {
         Group {
@@ -22,6 +22,6 @@ struct TaskView: View {
                 TaskSessionModeView()
             }
         }
-        .environmentObject(sessionViewModel)
+        .environment(sessionViewModel)
     }
 }

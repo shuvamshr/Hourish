@@ -8,10 +8,11 @@ import SwiftUI
 import Playgrounds
 import Combine
 
-final class SessionViewModel: ObservableObject {
-    @Published var sessionTasks: [SessionTask] = []
-    @Published var sessionActive: Bool = false
-    @Published var totalRemainingTime: Double = 0
+@Observable
+final class SessionViewModel {
+   var sessionTasks: [SessionTask] = []
+   var sessionActive: Bool = false
+   var totalRemainingTime: Double = 0
     
     private var timer: DispatchSourceTimer?
     private var taskStartTime: Date?
